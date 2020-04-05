@@ -3,7 +3,7 @@ mod parser;
 mod naming;
 
 use parser::parse;
-use naming::{remove_names, add_names};
+use naming::{remove_names, restore_names};
 
 fn main() {
     let inputs = [
@@ -20,7 +20,7 @@ fn main() {
             println!("Nameless term: {}", term);
             while term.reduce() {}
             println!("After reduction: {}", term);
-            println!("After renaming: {}", add_names(term));
+            println!("After renaming: {}", restore_names(term));
         }
     }
 }

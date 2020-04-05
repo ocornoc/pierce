@@ -5,7 +5,7 @@ pub type Index = u8;
 #[derive(Clone)]
 pub enum Term {
     Var(Index),
-    Abs(Box<Term>),
+    Abs(u8, Box<Term>),
     App(Box<Term>, Box<Term>),
 }
 
@@ -13,7 +13,7 @@ impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Term::Var(index) => write!(f, "{}", *index),
-            Term::Abs(body) => write!(f, "(λ. {})", body),
+            Term::Abs(_, body) => write!(f, "(λ. {})", body),
             Term::App(t1, t2) => write!(f, "({} {})", t1, t2),
         }
     }
@@ -31,7 +31,7 @@ impl Term {
                     }
                 }
             }
-            Term::Abs(body) => {
+            Term::Abs(_, body) => {
                 body.shift(up, cutoff + 1);
             }
             Term::App(t1, t2) => {
@@ -48,7 +48,7 @@ impl Term {
                     *self = subs.clone();
                 }
             }
-            Term::Abs(body) => {
+            Term::Abs(_, body) => {
                 subs.shift(true, 0);
                 body.replace(index + 1, subs);
             }
@@ -65,7 +65,7 @@ impl Term {
                 t1.reduce()
                     || t2.reduce()
                     || match &mut **t1 {
-                        Term::Abs(body) => {
+                        Term::Abs(_, body) => {
                             t2.shift(true, 0);
                             body.replace(0, t2);
                             body.shift(false, 0);
@@ -75,7 +75,7 @@ impl Term {
                         _ => false,
                     }
             }
-            Term::Abs(term) => term.reduce(),
+            Term::Abs(_, term) => term.reduce(),
             _ => false,
         }
     }

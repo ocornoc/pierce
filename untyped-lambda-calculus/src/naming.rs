@@ -5,8 +5,8 @@ pub fn remove_names(term: NamedTerm) -> Term {
      Context::default().remove_names(term)
 }
 
-pub fn add_names(term: Term) -> NamedTerm {
-     Context::default().add_names(term)
+pub fn restore_names(term: Term) -> NamedTerm {
+     Context::default().restore_names(term)
 }
 
 #[derive(Default)]
@@ -15,7 +15,7 @@ struct Context {
 }
 
 impl Context {
-    fn add_names(&mut self, term: Term) -> NamedTerm {
+    fn restore_names(&mut self, term: Term) -> NamedTerm {
         let len =  self.inner.len() as u8;
         match term {
             Term::Var(index) => {
@@ -23,16 +23,15 @@ impl Context {
 
                 NamedTerm::Var(*name)
             }
-            Term::Abs(body) => {
-                let arg = b'a' + len;
+            Term::Abs(arg, body) => {
                 self.inner.push(arg);
-                let body = self.add_names(*body);
+                let body = self.restore_names(*body);
                 self.inner.pop().unwrap();
                 NamedTerm::Abs(arg, Box::new(body))
             }
             Term::App(t1, t2) => {
-                let t1 = self.add_names(*t1);
-                let t2 = self.add_names(*t2);
+                let t1 = self.restore_names(*t1);
+                let t2 = self.restore_names(*t2);
                 NamedTerm::App(Box::new(t1), Box::new(t2))
             }
         }
@@ -56,7 +55,7 @@ impl Context {
                 self.inner.push(arg);
                 let body = self.remove_names(*body);
                 self.inner.pop().unwrap();
-                Term::Abs(Box::new(body))
+                Term::Abs(arg, Box::new(body))
             }
             NamedTerm::App(t1, t2) => {
                 let t1 = self.remove_names(*t1);
