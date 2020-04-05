@@ -1,63 +1,82 @@
 use std::fmt;
 
+pub type Index = u8;
+
 #[derive(Clone)]
 pub enum Term {
-    Var(u8),
-    Abs(u8, Box<Term>),
+    Var(Index),
+    Abs(Box<Term>),
     App(Box<Term>, Box<Term>),
 }
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Term::Var(var) => write!(f, "{}", *var as char),
-            Term::Abs(var, term) => write!(f, "(λ{}. {})", *var as char, term),
+            Term::Var(index) => write!(f, "{}", *index),
+            Term::Abs(body) => write!(f, "(λ. {})", body),
             Term::App(t1, t2) => write!(f, "({} {})", t1, t2),
         }
     }
 }
 
 impl Term {
-    fn is_free(&self, var: u8) -> bool {
+    fn shift(&mut self, up: bool, cutoff: Index) {
         match self {
-            Term::Var(var2) => var == *var2,
-            Term::Abs(arg, body) => (var != *arg) && body.is_free(var),
-            Term::App(t1, t2) => t1.is_free(var) || t2.is_free(var),
-        }
-    }
-
-    fn replace(&mut self, var: u8, subs: &Term) -> bool {
-        match self {
-            Term::Var(var2) => {
-                if var == *var2 {
-                    *self = subs.clone();
-                }
-                true
-            }
-            Term::Abs(arg, body) => {
-                if var == *arg {
-                    true
-                } else if subs.is_free(*arg) {
-                    false
-                } else {
-                    body.replace(var, subs)
-                }
-            }
-            Term::App(t1, t2) => t1.replace(var, subs) && t2.replace(var, subs),
-        }
-    }
-
-    pub fn reduce(&mut self) {
-        match self {
-            Term::App(t1, t2) => match &mut **t1 {
-                Term::Abs(arg, body) => {
-                    if body.replace(*arg, t2) {
-                        *self = *body.clone();
+            Term::Var(index) => {
+                if *index >= cutoff {
+                    if up {
+                        *index += 1;
+                    } else {
+                        *index -= 1;
                     }
                 }
-                _ => (),
-            },
-            _ => (),
+            }
+            Term::Abs(body) => {
+                body.shift(up, cutoff + 1);
+            }
+            Term::App(t1, t2) => {
+                t1.shift(up, cutoff);
+                t2.shift(up, cutoff);
+            }
+        }
+    }
+
+    fn replace(&mut self, index: Index, subs: &mut Term) {
+        match self {
+            Term::Var(index2) => {
+                if index == *index2 {
+                    *self = subs.clone();
+                }
+            }
+            Term::Abs(body) => {
+                subs.shift(true, 0);
+                body.replace(index + 1, subs);
+            }
+            Term::App(t1, t2) => {
+                t1.replace(index, subs);
+                t2.replace(index, subs);
+            }
+        }
+    }
+
+    pub fn reduce(&mut self) -> bool {
+        match self {
+            Term::App(t1, t2) => {
+                t1.reduce()
+                    || t2.reduce()
+                    || match &mut **t1 {
+                        Term::Abs(body) => {
+                            t2.shift(true, 0);
+                            body.replace(0, t2);
+                            body.shift(false, 0);
+                            *self = *body.clone();
+                            true
+                        }
+                        _ => false,
+                    }
+            }
+            Term::Abs(term) => term.reduce(),
+            _ => false,
         }
     }
 }
