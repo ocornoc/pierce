@@ -43,10 +43,9 @@ impl Context {
                 let index = self
                     .inner
                     .iter()
-                    .rev()
                     .enumerate()
                     .find(|(_, name2)| name == **name2)
-                    .map(|(index, _)| index)
+                    .map(|(index, _)| self.inner.len() - index - 1)
                     .unwrap() as Index;
 
                 Term::Var(index)
