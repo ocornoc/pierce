@@ -6,9 +6,11 @@ use std::fmt;
 use self::result::*;
 use self::tokenizer::*;
 
+pub type Name = u8;
+
 pub enum NamedTerm {
-    Var(u8),
-    Abs(u8, Box<NamedTerm>),
+    Var(Name),
+    Abs(Name, Box<NamedTerm>),
     App(Box<NamedTerm>, Box<NamedTerm>),
 }
 

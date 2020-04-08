@@ -1,11 +1,13 @@
 use std::fmt;
 
+use crate::parser::Name;
+
 pub type Index = u8;
 
 #[derive(Clone)]
 pub enum Term {
     Var(Index),
-    Abs(u8, Box<Term>),
+    Abs(Name, Box<Term>),
     App(Box<Term>, Box<Term>),
 }
 
