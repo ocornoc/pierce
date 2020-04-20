@@ -4,13 +4,13 @@ use crate::eval::{Index, Term};
 use crate::parser::{Name, NamedTerm};
 
 pub fn remove_names(term: NamedTerm) -> Option<Term> {
-     match Context::default().remove_names(term) {
+    match Context::default().remove_names(term) {
         Ok(term) => Some(term),
         Err(error) => {
             eprintln!("{}", error);
             None
         }
-     }
+    }
 }
 
 pub fn restore_names(term: Term) -> Option<NamedTerm> {
@@ -34,8 +34,16 @@ impl fmt::Display for NamingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use NamingError::*;
         match *self {
-            MissingIndex(name) => write!(f, "Error during name removal: Variable {:?} is not binded by any abstraction.", name as char),
-            MissingName(index) => write!(f, "Error during name restoring: Missign variable name for index {}.", index),
+            MissingIndex(name) => write!(
+                f,
+                "Error during name removal: Variable {:?} is not binded by any abstraction.",
+                name as char
+            ),
+            MissingName(index) => write!(
+                f,
+                "Error during name restoring: Missign variable name for index {}.",
+                index
+            ),
         }
     }
 }
@@ -49,7 +57,11 @@ impl Context {
     fn restore_names(&mut self, term: Term) -> NamingResult<NamedTerm> {
         match term {
             Term::Var(index) => {
-                let name = self.inner.get(self.inner.len() - index as usize - 1).ok_or_else(|| NamingError::MissingName(index))?;
+                let name = self
+                    .inner
+                    .get(self.inner.len() - index as usize - 1)
+                    .ok_or_else(|| NamingError::MissingName(index))?;
+
                 Ok(NamedTerm::Var(*name))
             }
             Term::Abs(arg, body) => {
@@ -72,10 +84,12 @@ impl Context {
                 let index = self
                     .inner
                     .iter()
+                    .rev()
                     .enumerate()
                     .find(|(_, name2)| name == **name2)
-                    .map(|(index, _)| self.inner.len() - index - 1)
-                    .ok_or_else(|| NamingError::MissingIndex(name))? as Index;
+                    .map(|(index, _)| index)
+                    .ok_or_else(|| NamingError::MissingIndex(name))?
+                    as Index;
 
                 Ok(Term::Var(index))
             }

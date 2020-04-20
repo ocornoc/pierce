@@ -9,7 +9,9 @@ fn main() {
     let inputs = [
         r"((\x. (x (\y. y))) (\z. z))",
         r"((\x. x) ((\x. x) (\z. ((\x. x) z))))",
+        r"(((\x. (\y. (x y))) (\x. x)) (\y. (\x. y)))",
         r"(\z. ((\x. (\y. (x y))) (y z)))",
+        r"(\z. (\y. ((\x. (\w. (w (x y)))) (y z))))"
     ];
 
     for input in &inputs {
@@ -23,8 +25,8 @@ fn run(input: &str) -> Option<()> {
     println!("Parsed term: {}", named_term);
     let mut term = remove_names(named_term)?;
     println!("Nameless term: {}", term);
-    while term.reduce() {}
-    println!("After reduction: {}", term);
+    term.evaluate();
+    println!("After evaluation: {}", term);
     println!("After renaming: {}", restore_names(term)?);
     Some(())
 }

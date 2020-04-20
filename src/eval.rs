@@ -53,6 +53,7 @@ impl Term {
             Term::Abs(_, body) => {
                 subs.shift(true, 0);
                 body.replace(index + 1, subs);
+                subs.shift(false, 0);
             }
             Term::App(t1, t2) => {
                 t1.replace(index, subs);
@@ -61,24 +62,24 @@ impl Term {
         }
     }
 
-    pub fn reduce(&mut self) -> bool {
+    fn reduce(&mut self) -> bool {
         match self {
-            Term::App(t1, t2) => {
-                t1.reduce()
-                    || t2.reduce()
-                    || match &mut **t1 {
-                        Term::Abs(_, body) => {
-                            t2.shift(true, 0);
-                            body.replace(0, t2);
-                            body.shift(false, 0);
-                            *self = *body.clone();
-                            true
-                        }
-                        _ => false,
-                    }
-            }
+            Term::App(t1, t2) => match &mut **t1 {
+                Term::Abs(_, body) => {
+                    t2.shift(true, 0);
+                    body.replace(0, t2);
+                    body.shift(false, 0);
+                    *self = *body.clone();
+                    true
+                }
+                _ => t1.reduce() || t2.reduce(),
+            },
             Term::Abs(_, term) => term.reduce(),
             _ => false,
         }
+    }
+
+    pub fn evaluate(&mut self) {
+        while self.reduce() {}
     }
 }
