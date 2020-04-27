@@ -1,5 +1,5 @@
-use std::fmt;
 use super::tokenizer::TokenKind;
+use std::fmt;
 
 pub type ParseResult<T> = Result<T, ParseError>;
 

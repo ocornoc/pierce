@@ -1,19 +1,21 @@
 use std::fmt;
 
-use crate::parser::Name;
+use crate::ty::Binding;
 
 pub type Index = u8;
 
 #[derive(Clone)]
 pub enum Term {
+    Unit,
     Var(Index),
-    Abs(Name, Box<Term>),
+    Abs(Binding, Box<Term>),
     App(Box<Term>, Box<Term>),
 }
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Term::Unit => write!(f, "unit"),
             Term::Var(index) => write!(f, "{}", *index),
             Term::Abs(_, body) => write!(f, "(λ. {})", body),
             Term::App(t1, t2) => write!(f, "({} {})", t1, t2),
@@ -24,6 +26,7 @@ impl fmt::Display for Term {
 impl Term {
     fn shift(&mut self, up: bool, cutoff: Index) {
         match self {
+            Term::Unit => (),
             Term::Var(index) => {
                 if *index >= cutoff {
                     if up {
@@ -45,6 +48,7 @@ impl Term {
 
     fn replace(&mut self, index: Index, subs: &mut Term) {
         match self {
+            Term::Unit => (),
             Term::Var(index2) => {
                 if index == *index2 {
                     *self = subs.clone();

@@ -41,7 +41,7 @@ impl fmt::Display for NamingError {
             ),
             MissingName(index) => write!(
                 f,
-                "Error during name restoring: Missign variable name for index {}.",
+                "Error during name restoring: Missing variable name for index {}.",
                 index
             ),
         }
@@ -56,6 +56,7 @@ struct Context {
 impl Context {
     fn restore_names(&mut self, term: Term) -> NamingResult<NamedTerm> {
         match term {
+            Term::Unit => Ok(NamedTerm::Unit),
             Term::Var(index) => {
                 let name = self
                     .inner
@@ -64,11 +65,11 @@ impl Context {
 
                 Ok(NamedTerm::Var(*name))
             }
-            Term::Abs(arg, body) => {
-                self.inner.push(arg);
+            Term::Abs(bind, body) => {
+                self.inner.push(bind.name);
                 let body = self.restore_names(*body)?;
                 self.inner.pop().unwrap();
-                Ok(NamedTerm::Abs(arg, Box::new(body)))
+                Ok(NamedTerm::Abs(bind, Box::new(body)))
             }
             Term::App(t1, t2) => {
                 let t1 = self.restore_names(*t1)?;
@@ -80,6 +81,7 @@ impl Context {
 
     fn remove_names(&mut self, term: NamedTerm) -> NamingResult<Term> {
         match term {
+            NamedTerm::Unit => Ok(Term::Unit),
             NamedTerm::Var(name) => {
                 let index = self
                     .inner
@@ -93,11 +95,11 @@ impl Context {
 
                 Ok(Term::Var(index))
             }
-            NamedTerm::Abs(arg, body) => {
-                self.inner.push(arg);
+            NamedTerm::Abs(bind, body) => {
+                self.inner.push(bind.name);
                 let body = self.remove_names(*body)?;
                 self.inner.pop().unwrap();
-                Ok(Term::Abs(arg, Box::new(body)))
+                Ok(Term::Abs(bind, Box::new(body)))
             }
             NamedTerm::App(t1, t2) => {
                 let t1 = self.remove_names(*t1)?;

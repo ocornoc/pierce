@@ -3,22 +3,29 @@ pub mod tokenizer;
 
 use std::fmt;
 
+use crate::ty::{Binding, Ty};
+
 use self::result::*;
 use self::tokenizer::*;
 
 pub type Name = u8;
 
+#[derive(Clone)]
 pub enum NamedTerm {
+    Unit,
     Var(Name),
-    Abs(Name, Box<NamedTerm>),
+    Abs(Binding, Box<NamedTerm>),
     App(Box<NamedTerm>, Box<NamedTerm>),
 }
 
 impl fmt::Display for NamedTerm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            NamedTerm::Unit => write!(f, "unit"),
             NamedTerm::Var(var) => write!(f, "{}", *var as char),
-            NamedTerm::Abs(var, term) => write!(f, "(λ{}. {})", *var as char, term),
+            NamedTerm::Abs(Binding { name, ty }, term) => {
+                write!(f, "(λ{}:{}. {})", *name as char, ty, term)
+            }
             NamedTerm::App(t1, t2) => write!(f, "({} {})", t1, t2),
         }
     }
@@ -71,8 +78,16 @@ impl<'a> Parser<'a> {
 
     fn parse_term(&mut self) -> ParseResult<NamedTerm> {
         let token = self.consume_lookahead()?;
-        match *token.kind() {
-            TokenKind::Char(byte) => Ok(NamedTerm::Var(byte)),
+        match token.kind() {
+            TokenKind::Word(bytes) => {
+                if bytes == b"unit" {
+                    Ok(NamedTerm::Unit)
+                } else if bytes.len() == 1 && bytes[0].is_ascii_alphabetic() {
+                    Ok(NamedTerm::Var(bytes[0]))
+                } else {
+                    Err(token.into_unexpected())
+                }
+            }
             TokenKind::LBracket => {
                 let term = if let TokenKind::Lambda = self.lookahead.kind() {
                     self.parse_abs()?
@@ -90,17 +105,22 @@ impl<'a> Parser<'a> {
         self.expect_token(TokenKind::Lambda)?;
 
         let token = self.consume_lookahead()?;
-        let arg = if let TokenKind::Char(byte) = *token.kind() {
-            byte
+        let name = if let TokenKind::Word(word) = token.kind() {
+            if word.len() == 1 && word[0].is_ascii_lowercase() {
+                word[0]
+            } else {
+                return Err(token.into_unexpected());
+            }
         } else {
             return Err(token.into_unexpected());
         };
-
+        self.expect_token(TokenKind::Colon)?;
+        let ty = self.parse_ty()?;
         self.expect_token(TokenKind::Dot)?;
         self.expect_token(TokenKind::Space)?;
         let body = self.parse_term()?;
 
-        Ok(NamedTerm::Abs(arg, Box::new(body)))
+        Ok(NamedTerm::Abs(Binding { name, ty }, Box::new(body)))
     }
 
     fn parse_app(&mut self) -> ParseResult<NamedTerm> {
@@ -108,5 +128,22 @@ impl<'a> Parser<'a> {
         self.expect_token(TokenKind::Space)?;
         let t2 = self.parse_term()?;
         Ok(NamedTerm::App(Box::new(t1), Box::new(t2)))
+    }
+
+    fn parse_ty(&mut self) -> ParseResult<Ty> {
+        let token = self.consume_lookahead()?;
+        match token.kind() {
+            TokenKind::LBracket => {
+                let t1 = self.parse_ty()?;
+                self.expect_token(TokenKind::Space)?;
+                self.expect_token(TokenKind::Arrow)?;
+                self.expect_token(TokenKind::Space)?;
+                let t2 = self.parse_ty()?;
+                self.expect_token(TokenKind::RBracket)?;
+                Ok(Ty::Arrow(Box::new(t1), Box::new(t2)))
+            }
+            TokenKind::Word(bytes) if bytes == b"Unit" => Ok(Ty::Unit),
+            _ => Err(token.into_unexpected()),
+        }
     }
 }

@@ -21,8 +21,10 @@ pub enum TokenKind {
     LBracket,
     RBracket,
     Lambda,
-    Char(u8),
+    Word(Vec<u8>),
     Dot,
+    Colon,
+    Arrow,
     Space,
     EOF,
 }
@@ -30,6 +32,17 @@ pub enum TokenKind {
 impl TokenKind {
     fn into_token(self, loc: usize) -> Token {
         Token { loc, kind: self }
+    }
+
+    fn step(&self) -> usize {
+        use TokenKind::*;
+
+        match self {
+            Arrow => 2,
+            EOF => 0,
+            Word(bytes) => bytes.len(),
+            _ => 1,
+        }
     }
 }
 
@@ -43,25 +56,40 @@ impl<'a> Tokenizer<'a> {
         Tokenizer { input, loc: 0 }
     }
 
-    fn tokenize(&self, byte: u8) -> ParseResult<Token> {
+    pub fn next_token(&mut self) -> ParseResult<Token> {
         use TokenKind::*;
 
-        let kind = match byte {
-            b'(' => LBracket,
-            b')' => RBracket,
-            b'\\' => Lambda,
-            b'.' => Dot,
-            b' ' => Space,
-            byte if byte.is_ascii_lowercase() => Char(byte),
-            _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte))),
-        };
-        Ok(kind.into_token(self.loc))
-    }
-
-    pub fn next_token(&mut self) -> ParseResult<Token> {
         if let Some(&byte) = self.input.get(self.loc) {
-            let token = self.tokenize(byte)?;
-            self.loc += 1;
+            let kind = match byte {
+                b'(' => LBracket,
+                b')' => RBracket,
+                b'\\' => Lambda,
+                b'.' => Dot,
+                b' ' => Space,
+                b':' => Colon,
+                b'-' => {
+                    if self.input.get(self.loc + 1) == Some(&b'>') {
+                        Arrow
+                    } else {
+                        return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte)));
+                    }
+                }
+                byte if byte.is_ascii_alphabetic() => {
+                    let mut word = vec![byte];
+                    let mut offset = 1;
+                    while let Some(&byte) = self.input.get(self.loc + offset) {
+                        if !byte.is_ascii_alphabetic() {
+                            break;
+                        }
+                        word.push(byte);
+                        offset += 1;
+                    }
+                    Word(word)
+                }
+                _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte))),
+            };
+            let token = kind.into_token(self.loc);
+            self.loc += token.kind.step();
             Ok(token)
         } else {
             Ok(TokenKind::EOF.into_token(self.loc))

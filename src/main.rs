@@ -1,18 +1,15 @@
 mod eval;
-mod parser;
 mod naming;
+mod parser;
+mod ty;
 
-use parser::parse;
 use naming::{remove_names, restore_names};
+use parser::parse;
+use ty::type_of;
 
 fn main() {
-    let inputs = [
-        r"((\x. (x (\y. y))) (\z. z))",
-        r"((\x. x) ((\x. x) (\z. ((\x. x) z))))",
-        r"(((\x. (\y. (x y))) (\x. x)) (\y. (\x. y)))",
-        r"(\z. ((\x. (\y. (x y))) (y z)))",
-        r"(\z. (\y. ((\x. (\w. (w (x y)))) (y z))))"
-    ];
+    let inputs =
+        [r"((\x:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) (\z:(Unit -> Unit). z))"];
 
     for input in &inputs {
         run(input);
@@ -23,6 +20,8 @@ fn run(input: &str) -> Option<()> {
     println!("\nInput: {}", input);
     let named_term = parse(input)?;
     println!("Parsed term: {}", named_term);
+    let ty = type_of(&named_term)?;
+    println!("Type of term: {}", ty);
     let mut term = remove_names(named_term)?;
     println!("Nameless term: {}", term);
     term.evaluate();
