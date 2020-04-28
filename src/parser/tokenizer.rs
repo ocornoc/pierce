@@ -22,6 +22,7 @@ pub enum TokenKind {
     RBracket,
     Lambda,
     Word(Vec<u8>),
+    AlphaChar(u8),
     Dot,
     Colon,
     Arrow,
@@ -86,7 +87,11 @@ impl<'a> Tokenizer<'a> {
                         word.push(byte);
                         offset += 1;
                     }
-                    Word(word)
+                    if offset > 1 {
+                        Word(word)
+                    } else {
+                        AlphaChar(word[0])
+                    }
                 }
                 _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte))),
             };

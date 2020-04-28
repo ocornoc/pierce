@@ -81,19 +81,12 @@ impl<'a> Parser<'a> {
     fn parse_term(&mut self) -> ParseResult<NamedTerm> {
         let token = self.consume_lookahead()?;
         match token.kind() {
-            TokenKind::Word(bytes) => {
-                if bytes == b"unit" {
-                    Ok(NamedTerm::Unit)
-                } else if bytes.len() == 1 && bytes[0].is_ascii_alphabetic() {
-                    Ok(NamedTerm::Var(bytes[0]))
-                } else {
-                    Err(token.into_unexpected())
-                }
-            }
+            TokenKind::Word(bytes) if bytes == b"unit" => Ok(NamedTerm::Unit),
+            TokenKind::AlphaChar(byte) => Ok(NamedTerm::Var(*byte)),
             TokenKind::LBracket => {
                 let term = match self.lookahead.kind() {
                     TokenKind::Lambda => self.parse_abs()?,
-                    TokenKind::Word(bytes) if &bytes == &b"let" => self.parse_let()?,
+                    TokenKind::Word(bytes) if bytes == b"let" => self.parse_let()?,
                     _ => self.parse_app()?,
                 };
                 self.expect_token(TokenKind::RBracket)?;
@@ -107,12 +100,8 @@ impl<'a> Parser<'a> {
         self.expect_token(TokenKind::Lambda)?;
 
         let token = self.consume_lookahead()?;
-        let name = if let TokenKind::Word(word) = token.kind() {
-            if word.len() == 1 && word[0].is_ascii_lowercase() {
-                word[0]
-            } else {
-                return Err(token.into_unexpected());
-            }
+        let name = if let TokenKind::AlphaChar(byte) = token.kind() {
+            *byte
         } else {
             return Err(token.into_unexpected());
         };
@@ -137,12 +126,8 @@ impl<'a> Parser<'a> {
         self.expect_token(TokenKind::Space)?;
 
         let token = self.consume_lookahead()?;
-        let name = if let TokenKind::Word(word) = token.kind() {
-            if word.len() == 1 && word[0].is_ascii_lowercase() {
-                word[0]
-            } else {
-                return Err(token.into_unexpected());
-            }
+        let name = if let TokenKind::AlphaChar(byte) = token.kind() {
+            *byte
         } else {
             return Err(token.into_unexpected());
         };
