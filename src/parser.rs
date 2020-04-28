@@ -78,6 +78,23 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn expect_word(&mut self, expected_word: &[u8]) -> ParseResult<()> {
+        let token = self.consume_lookahead()?;
+        match token.kind() {
+            TokenKind::Word(word) if word.as_slice() == expected_word => Ok(()),
+            _ => Err(token.into_unexpected())
+        }
+    }
+
+    fn parse_name(&mut self) -> ParseResult<Name> {
+        let token = self.consume_lookahead()?;
+        if let TokenKind::AlphaChar(byte) = token.kind() {
+            Ok(*byte)
+        } else {
+            Err(token.into_unexpected())
+        }
+    }
+
     fn parse_term(&mut self) -> ParseResult<NamedTerm> {
         let token = self.consume_lookahead()?;
         match token.kind() {
@@ -99,12 +116,7 @@ impl<'a> Parser<'a> {
     fn parse_abs(&mut self) -> ParseResult<NamedTerm> {
         self.expect_token(TokenKind::Lambda)?;
 
-        let token = self.consume_lookahead()?;
-        let name = if let TokenKind::AlphaChar(byte) = token.kind() {
-            *byte
-        } else {
-            return Err(token.into_unexpected());
-        };
+        let name = self.parse_name()?;
         self.expect_token(TokenKind::Colon)?;
         let ty = self.parse_ty()?;
         self.expect_token(TokenKind::Dot)?;
@@ -118,26 +130,21 @@ impl<'a> Parser<'a> {
         let t1 = self.parse_term()?;
         self.expect_token(TokenKind::Space)?;
         let t2 = self.parse_term()?;
+
         Ok(NamedTerm::App(Box::new(t1), Box::new(t2)))
     }
 
     fn parse_let(&mut self) -> ParseResult<NamedTerm> {
-        self.expect_token(TokenKind::Word(b"let".to_vec()))?;
+        self.expect_word(b"let")?;
+
         self.expect_token(TokenKind::Space)?;
-
-        let token = self.consume_lookahead()?;
-        let name = if let TokenKind::AlphaChar(byte) = token.kind() {
-            *byte
-        } else {
-            return Err(token.into_unexpected());
-        };
-
+        let name = self.parse_name()?;
         self.expect_token(TokenKind::Space)?;
         self.expect_token(TokenKind::Equal)?;
         self.expect_token(TokenKind::Space)?;
         let t1 = self.parse_term()?;
         self.expect_token(TokenKind::Space)?;
-        self.expect_token(TokenKind::Word(b"in".to_vec()))?;
+        self.expect_word(b"in")?;
         self.expect_token(TokenKind::Space)?;
         let t2 = self.parse_term()?;
         Ok(NamedTerm::Let(name, Box::new(t1), Box::new(t2)))
