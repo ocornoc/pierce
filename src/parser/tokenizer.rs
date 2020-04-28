@@ -26,6 +26,7 @@ pub enum TokenKind {
     Colon,
     Arrow,
     Space,
+    Equal,
     EOF,
 }
 
@@ -67,6 +68,7 @@ impl<'a> Tokenizer<'a> {
                 b'.' => Dot,
                 b' ' => Space,
                 b':' => Colon,
+                b'=' => Equal,
                 b'-' => {
                     if self.input.get(self.loc + 1) == Some(&b'>') {
                         Arrow
