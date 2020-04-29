@@ -35,33 +35,25 @@ impl TokenKind {
     fn into_token(self, loc: usize) -> Token {
         Token { loc, kind: self }
     }
-
-    fn step(&self) -> usize {
-        use TokenKind::*;
-
-        match self {
-            Arrow => 2,
-            EOF => 0,
-            Word(bytes) => bytes.len(),
-            _ => 1,
-        }
-    }
 }
 
 pub struct Tokenizer {
-    input: Vec<char>,
-    loc: usize
+    input: String,
+    loc: usize,
 }
 
 impl Tokenizer {
     pub fn new(input: String) -> Self {
-        Tokenizer { input: input.chars().collect(), loc: 0 }
+        Tokenizer { input, loc: 0 }
     }
 
     pub fn next_token(&mut self) -> ParseResult<Token> {
         use TokenKind::*;
 
-        if let Some(&c) = self.input.get(self.loc) {
+        let mut chars = self.input.get(self.loc..).unwrap_or("").chars().peekable();
+        let mut offset = 0;
+        if let Some(c) = chars.peek() {
+            offset += c.len_utf8();
             let kind = match c {
                 '(' => LBracket,
                 ')' => RBracket,
@@ -71,21 +63,32 @@ impl Tokenizer {
                 ':' => Colon,
                 '=' => Equal,
                 '-' => {
-                    if self.input.get(self.loc + 1) == Some(&'>') {
-                        Arrow
-                    } else {
-                        return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c)));
+                    chars.next().unwrap();
+                    match chars.peek() {
+                        Some('>') => {
+                            offset += '>'.len_utf8();
+                            Arrow
+                        },
+                        Some(&c) => {
+                            return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c)))
+                        }
+                        None => {
+                            return Err(ParseError::new(
+                                self.loc,
+                                ParseErrorKind::UnexpectedToken(TokenKind::EOF),
+                            ))
+                        }
                     }
                 }
-                c if c.is_alphabetic() => {
-                    let mut word = c.to_string();
-                    let mut offset = 1;
-                    while let Some(&c) = self.input.get(self.loc + offset) {
+                &c if c.is_alphabetic() => {
+                    let mut word = String::new();
+                    word.push(chars.next().unwrap());
+                    while let Some(&c) = chars.peek() {
                         if !c.is_alphabetic() {
                             break;
                         }
-                        word.push(c);
-                        offset += 1;
+                        offset += c.len_utf8();
+                        word.push(chars.next().unwrap());
                     }
                     if offset > 1 {
                         Word(word)
@@ -93,10 +96,10 @@ impl Tokenizer {
                         AlphaChar(c)
                     }
                 }
-                _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c))),
+                &c => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c))),
             };
             let token = kind.into_token(self.loc);
-            self.loc += token.kind.step();
+            self.loc += offset;
             Ok(token)
         } else {
             Ok(TokenKind::EOF.into_token(self.loc))
