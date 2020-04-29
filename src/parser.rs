@@ -20,7 +20,7 @@ pub enum NamedTerm {
 }
 
 impl fmt::Display for NamedTerm {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             NamedTerm::Unit => write!(f, "unit"),
             NamedTerm::Var(var) => write!(f, "{}", *var as char),
