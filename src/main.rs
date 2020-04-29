@@ -8,7 +8,8 @@ use parser::parse;
 
 fn main() {
     let inputs =
-        [r"(let i = (\z:(Unit -> Unit). z) in ((λx:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) i))"];
+        [r"(let i = (\z:(Unit -> Unit). z) in ((λx:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) i))",
+         r"(\x:Unit. ((|z:Unit. z) (\y:(Unit -> Unit). x)))"];
 
     for input in &inputs {
         run(input.to_string()).unwrap();

@@ -61,7 +61,7 @@ impl Context {
 
                 Ok(NamedTerm::Var(bind.name))
             }
-            Term::Lam(bind, body) => {
+            Term::Lam(bind, body) | Term::Mu(bind, body) => {
                 self.inner.push(bind);
                 let body = self.restore(*body)?;
                 let bind = self.inner.pop().unwrap();
@@ -95,6 +95,18 @@ impl Context {
                 Ok((
                     Term::Lam(bind.clone(), Box::new(body)),
                     Ty::Arrow(Box::new(bind.ty), Box::new(body_ty)),
+                ))
+            }
+            NamedTerm::Mu(bind, body) => {
+                self.inner.push(bind);
+                let (body, body_ty) = self.desugar(*body)?;
+                let bind = self.inner.pop().unwrap();
+                // mu a. b has type ((a -> b) -> a) -> a.
+                let mut head_ty = Ty::Arrow(Box::new(bind.ty.clone()), Box::new(body_ty.clone()));
+                head_ty = Ty::Arrow(Box::new(head_ty), Box::new(bind.ty.clone()));
+                Ok((
+                    Term::Mu(bind.clone(), Box::new(body)),
+                    Ty::Arrow(Box::new(head_ty), Box::new(bind.ty)),
                 ))
             }
             NamedTerm::App(t1, t2) => {
