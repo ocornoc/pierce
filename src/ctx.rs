@@ -37,7 +37,7 @@ impl fmt::Display for CtxError {
         match self {
             MissingBinding(name) => write!(
                 f,
-                "Context error: Variable {:?} is not binded.",
+                "Context error: Variable {:?} is not bound.",
                 *name as char
             ),
             UnexpectedType(term, ty) => write!(
