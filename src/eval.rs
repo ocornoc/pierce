@@ -68,7 +68,7 @@ impl Term {
 
     fn reduce(&mut self) -> bool {
         match self {
-            Term::App(t1, t2) => match &mut **t1 {
+            Term::App(t1, t2) => match t1.as_mut() {
                 Term::Abs(_, body) => {
                     t2.shift(true, 0);
                     body.replace(0, t2);
