@@ -21,7 +21,7 @@ pub enum TokenKind {
     LBracket,
     RBracket,
     Lambda,
-    Word(Vec<char>),
+    Word(String),
     AlphaChar(char),
     Dot,
     Colon,
@@ -77,8 +77,8 @@ impl Tokenizer {
                         return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c)));
                     }
                 }
-                c if c.is_ascii_alphabetic() => {
-                    let mut word = vec![c];
+                c if c.is_alphabetic() => {
+                    let mut word = c.to_string();
                     let mut offset = 1;
                     while let Some(&c) = self.input.get(self.loc + offset) {
                         if !c.is_alphabetic() {
@@ -90,7 +90,7 @@ impl Tokenizer {
                     if offset > 1 {
                         Word(word)
                     } else {
-                        AlphaChar(word[0])
+                        AlphaChar(c)
                     }
                 }
                 _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c))),

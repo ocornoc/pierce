@@ -78,7 +78,7 @@ impl Parser {
         }
     }
 
-    fn expect_word(&mut self, expected_word: &Vec<char>) -> ParseResult<()> {
+    fn expect_word(&mut self, expected_word: &str) -> ParseResult<()> {
         let token = self.consume_lookahead()?;
         match token.kind() {
             TokenKind::Word(word) if word == expected_word => Ok(()),
@@ -98,12 +98,12 @@ impl Parser {
     fn parse_term(&mut self) -> ParseResult<NamedTerm> {
         let token = self.consume_lookahead()?;
         match token.kind() {
-            TokenKind::Word(chars) if chars == &("unit".chars().collect::<Vec<_>>()) => Ok(NamedTerm::Unit),
+            TokenKind::Word(chars) if chars == "unit" => Ok(NamedTerm::Unit),
             TokenKind::AlphaChar(c) => Ok(NamedTerm::Var(*c)),
             TokenKind::LBracket => {
                 let term = match self.lookahead.kind() {
                     TokenKind::Lambda => self.parse_abs()?,
-                    TokenKind::Word(chars) if chars == &("let".chars().collect::<Vec<_>>()) => self.parse_let()?,
+                    TokenKind::Word(chars) if chars == "let" => self.parse_let()?,
                     _ => self.parse_app()?,
                 };
                 self.expect_token(TokenKind::RBracket)?;
@@ -135,7 +135,7 @@ impl Parser {
     }
 
     fn parse_let(&mut self) -> ParseResult<NamedTerm> {
-        self.expect_word(&"let".chars().collect())?;
+        self.expect_word("let")?;
 
         self.expect_token(TokenKind::Space)?;
         let name = self.parse_name()?;
@@ -144,7 +144,7 @@ impl Parser {
         self.expect_token(TokenKind::Space)?;
         let t1 = self.parse_term()?;
         self.expect_token(TokenKind::Space)?;
-        self.expect_word(&"in".chars().collect())?;
+        self.expect_word("in")?;
         self.expect_token(TokenKind::Space)?;
         let t2 = self.parse_term()?;
         Ok(NamedTerm::Let(name, Box::new(t1), Box::new(t2)))
@@ -162,7 +162,7 @@ impl Parser {
                 self.expect_token(TokenKind::RBracket)?;
                 Ok(Ty::Arrow(Box::new(t1), Box::new(t2)))
             }
-            TokenKind::Word(chars) if chars == &("Unit".chars().collect::<Vec<_>>()) => Ok(Ty::Unit),
+            TokenKind::Word(chars) if chars == "Unit" => Ok(Ty::Unit),
             _ => Err(token.into_unexpected()),
         }
     }
