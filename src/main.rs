@@ -11,7 +11,7 @@ fn main() {
         [r"(let i = (\z:(Unit -> Unit). z) in ((\x:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) i))"];
 
     for input in &inputs {
-        run(input);
+        run(input).unwrap();
     }
 }
 
