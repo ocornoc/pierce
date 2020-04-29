@@ -29,7 +29,7 @@ impl fmt::Display for ParseErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ParseErrorKind::*;
         match self {
-            &InvalidChar(c) => write!(f, "Invalid byte {}", c),
+            &InvalidChar(c) => write!(f, "Invalid char {}", c),
             UnexpectedToken(token) => write!(f, "Unexpected token '{:?}'", token),
         }
     }

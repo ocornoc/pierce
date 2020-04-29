@@ -35,11 +35,7 @@ impl fmt::Display for CtxError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use CtxError::*;
         match self {
-            MissingBinding(name) => write!(
-                f,
-                "Context error: Variable {:?} is not bound.",
-                *name as char
-            ),
+            MissingBinding(name) => write!(f, "Context error: Variable {:?} is not bound.", name),
             UnexpectedType(term, ty) => write!(
                 f,
                 "Context error: Unexpected type {} for term {}.",

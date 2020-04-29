@@ -23,12 +23,12 @@ impl fmt::Display for NamedTerm {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             NamedTerm::Unit => write!(f, "unit"),
-            NamedTerm::Var(var) => write!(f, "{}", *var as char),
+            NamedTerm::Var(var) => write!(f, "{}", var),
             NamedTerm::Abs(Binding { name, ty }, term) => {
-                write!(f, "(λ{}:{}. {})", *name as char, ty, term)
+                write!(f, "(λ{}:{}. {})", name, ty, term)
             }
             NamedTerm::App(t1, t2) => write!(f, "({} {})", t1, t2),
-            NamedTerm::Let(name, t1, t2) => write!(f, "(let {} = {} in {})", *name as char, t1, t2),
+            NamedTerm::Let(name, t1, t2) => write!(f, "(let {} = {} in {})", name, t1, t2),
         }
     }
 }
