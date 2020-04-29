@@ -8,7 +8,7 @@ use crate::ty::{Binding, Ty};
 use self::result::*;
 use self::tokenizer::*;
 
-pub type Name = u8;
+pub type Name = char;
 
 #[derive(Clone)]
 pub enum NamedTerm {
@@ -33,8 +33,8 @@ impl fmt::Display for NamedTerm {
     }
 }
 
-pub fn parse(input: &str) -> Option<NamedTerm> {
-    let tokens = Tokenizer::new(input.as_bytes());
+pub fn parse(input: String) -> Option<NamedTerm> {
+    let tokens = Tokenizer::new(input.clone());
     match Parser::run(tokens) {
         Ok(term) => Some(term),
         Err(error) => {
@@ -47,13 +47,13 @@ pub fn parse(input: &str) -> Option<NamedTerm> {
     }
 }
 
-struct Parser<'a> {
+struct Parser {
     lookahead: Token,
-    tokens: Tokenizer<'a>,
+    tokens: Tokenizer,
 }
 
-impl<'a> Parser<'a> {
-    fn run(mut tokens: Tokenizer<'a>) -> ParseResult<NamedTerm> {
+impl Parser {
+    fn run(mut tokens: Tokenizer) -> ParseResult<NamedTerm> {
         let mut parser = Parser {
             lookahead: tokens.next_token()?,
             tokens,
@@ -78,10 +78,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn expect_word(&mut self, expected_word: &[u8]) -> ParseResult<()> {
+    fn expect_word(&mut self, expected_word: &Vec<char>) -> ParseResult<()> {
         let token = self.consume_lookahead()?;
         match token.kind() {
-            TokenKind::Word(word) if word.as_slice() == expected_word => Ok(()),
+            TokenKind::Word(word) if word == expected_word => Ok(()),
             _ => Err(token.into_unexpected())
         }
     }
@@ -98,12 +98,12 @@ impl<'a> Parser<'a> {
     fn parse_term(&mut self) -> ParseResult<NamedTerm> {
         let token = self.consume_lookahead()?;
         match token.kind() {
-            TokenKind::Word(bytes) if bytes == b"unit" => Ok(NamedTerm::Unit),
-            TokenKind::AlphaChar(byte) => Ok(NamedTerm::Var(*byte)),
+            TokenKind::Word(chars) if chars == &("unit".chars().collect::<Vec<_>>()) => Ok(NamedTerm::Unit),
+            TokenKind::AlphaChar(c) => Ok(NamedTerm::Var(*c)),
             TokenKind::LBracket => {
                 let term = match self.lookahead.kind() {
                     TokenKind::Lambda => self.parse_abs()?,
-                    TokenKind::Word(bytes) if bytes == b"let" => self.parse_let()?,
+                    TokenKind::Word(chars) if chars == &("let".chars().collect::<Vec<_>>()) => self.parse_let()?,
                     _ => self.parse_app()?,
                 };
                 self.expect_token(TokenKind::RBracket)?;
@@ -135,7 +135,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let(&mut self) -> ParseResult<NamedTerm> {
-        self.expect_word(b"let")?;
+        self.expect_word(&"let".chars().collect())?;
 
         self.expect_token(TokenKind::Space)?;
         let name = self.parse_name()?;
@@ -144,7 +144,7 @@ impl<'a> Parser<'a> {
         self.expect_token(TokenKind::Space)?;
         let t1 = self.parse_term()?;
         self.expect_token(TokenKind::Space)?;
-        self.expect_word(b"in")?;
+        self.expect_word(&"in".chars().collect())?;
         self.expect_token(TokenKind::Space)?;
         let t2 = self.parse_term()?;
         Ok(NamedTerm::Let(name, Box::new(t1), Box::new(t2)))
@@ -162,7 +162,7 @@ impl<'a> Parser<'a> {
                 self.expect_token(TokenKind::RBracket)?;
                 Ok(Ty::Arrow(Box::new(t1), Box::new(t2)))
             }
-            TokenKind::Word(bytes) if bytes == b"Unit" => Ok(Ty::Unit),
+            TokenKind::Word(chars) if chars == &("Unit".chars().collect::<Vec<_>>()) => Ok(Ty::Unit),
             _ => Err(token.into_unexpected()),
         }
     }

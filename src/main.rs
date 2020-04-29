@@ -8,14 +8,14 @@ use parser::parse;
 
 fn main() {
     let inputs =
-        [r"(let i = (\z:(Unit -> Unit). z) in ((\x:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) i))"];
+        [r"(let i = (\z:(Unit -> Unit). z) in ((λx:((Unit -> Unit) -> (Unit -> Unit)). (x (\y:Unit. y))) i))"];
 
     for input in &inputs {
-        run(input);
+        run(input.to_string()).unwrap();
     }
 }
 
-fn run(input: &str) -> Option<()> {
+fn run(input: String) -> Option<()> {
     println!("\nInput: {}", input);
     let named_term = parse(input)?;
     println!("Parsed term: {}", named_term);

@@ -15,21 +15,21 @@ impl ParseError {
 }
 
 impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Parsing error at location {}", self.loc)
     }
 }
 
 pub enum ParseErrorKind {
-    InvalidByte(u8),
+    InvalidChar(char),
     UnexpectedToken(TokenKind),
 }
 
 impl fmt::Display for ParseErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ParseErrorKind::*;
         match self {
-            &InvalidByte(byte) => write!(f, "Invalid byte {:?}", byte as char),
+            &InvalidChar(c) => write!(f, "Invalid byte {}", c),
             UnexpectedToken(token) => write!(f, "Unexpected token '{:?}'", token),
         }
     }
