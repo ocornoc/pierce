@@ -13,7 +13,7 @@ pub enum Term {
 }
 
 impl fmt::Display for Term {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Term::Unit => write!(f, "unit"),
             Term::Var(index) => write!(f, "{}", *index),

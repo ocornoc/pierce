@@ -9,7 +9,7 @@ pub enum Ty {
 }
 
 impl fmt::Display for Ty {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Ty::Unit => write!(f, "Unit"),
             Ty::Arrow(t1, t2) => write!(f, "({} -> {})", t1, t2),
