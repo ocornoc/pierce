@@ -21,8 +21,8 @@ pub enum TokenKind {
     LBracket,
     RBracket,
     Lambda,
-    Word(Vec<u8>),
-    AlphaChar(u8),
+    Word(Vec<char>),
+    AlphaChar(char),
     Dot,
     Colon,
     Arrow,
@@ -48,43 +48,43 @@ impl TokenKind {
     }
 }
 
-pub struct Tokenizer<'a> {
-    input: &'a [u8],
-    loc: usize,
+pub struct Tokenizer {
+    input: Vec<char>,
+    loc: usize
 }
 
-impl<'a> Tokenizer<'a> {
-    pub fn new(input: &'a [u8]) -> Self {
-        Tokenizer { input, loc: 0 }
+impl Tokenizer {
+    pub fn new(input: String) -> Self {
+        Tokenizer { input: input.chars().collect(), loc: 0 }
     }
 
     pub fn next_token(&mut self) -> ParseResult<Token> {
         use TokenKind::*;
 
-        if let Some(&byte) = self.input.get(self.loc) {
-            let kind = match byte {
-                b'(' => LBracket,
-                b')' => RBracket,
-                b'\\' => Lambda,
-                b'.' => Dot,
-                b' ' => Space,
-                b':' => Colon,
-                b'=' => Equal,
-                b'-' => {
-                    if self.input.get(self.loc + 1) == Some(&b'>') {
+        if let Some(&c) = self.input.get(self.loc) {
+            let kind = match c {
+                '(' => LBracket,
+                ')' => RBracket,
+                '\\' | 'λ' => Lambda,
+                '.' => Dot,
+                ' ' => Space,
+                ':' => Colon,
+                '=' => Equal,
+                '-' => {
+                    if self.input.get(self.loc + 1) == Some(&'>') {
                         Arrow
                     } else {
-                        return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte)));
+                        return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c)));
                     }
                 }
-                byte if byte.is_ascii_alphabetic() => {
-                    let mut word = vec![byte];
+                c if c.is_ascii_alphabetic() => {
+                    let mut word = vec![c];
                     let mut offset = 1;
-                    while let Some(&byte) = self.input.get(self.loc + offset) {
-                        if !byte.is_ascii_alphabetic() {
+                    while let Some(&c) = self.input.get(self.loc + offset) {
+                        if !c.is_alphabetic() {
                             break;
                         }
-                        word.push(byte);
+                        word.push(c);
                         offset += 1;
                     }
                     if offset > 1 {
@@ -93,7 +93,7 @@ impl<'a> Tokenizer<'a> {
                         AlphaChar(word[0])
                     }
                 }
-                _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidByte(byte))),
+                _ => return Err(ParseError::new(self.loc, ParseErrorKind::InvalidChar(c))),
             };
             let token = kind.into_token(self.loc);
             self.loc += token.kind.step();
