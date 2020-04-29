@@ -14,7 +14,7 @@ pub type Name = char;
 pub enum NamedTerm {
     Unit,
     Var(Name),
-    Abs(Binding, Box<NamedTerm>),
+    Lam(Binding, Box<NamedTerm>),
     App(Box<NamedTerm>, Box<NamedTerm>),
     Let(Name, Box<NamedTerm>, Box<NamedTerm>),
 }
@@ -24,7 +24,7 @@ impl fmt::Display for NamedTerm {
         match self {
             NamedTerm::Unit => write!(f, "unit"),
             NamedTerm::Var(var) => write!(f, "{}", var),
-            NamedTerm::Abs(Binding { name, ty }, term) => {
+            NamedTerm::Lam(Binding { name, ty }, term) => {
                 write!(f, "(λ{}:{}. {})", name, ty, term)
             }
             NamedTerm::App(t1, t2) => write!(f, "({} {})", t1, t2),
@@ -102,7 +102,7 @@ impl Parser {
             TokenKind::AlphaChar(c) => Ok(NamedTerm::Var(*c)),
             TokenKind::LBracket => {
                 let term = match self.lookahead.kind() {
-                    TokenKind::Lambda => self.parse_abs()?,
+                    TokenKind::Lambda => self.parse_lam()?,
                     TokenKind::Word(chars) if chars == "let" => self.parse_let()?,
                     _ => self.parse_app()?,
                 };
@@ -113,7 +113,7 @@ impl Parser {
         }
     }
 
-    fn parse_abs(&mut self) -> ParseResult<NamedTerm> {
+    fn parse_lam(&mut self) -> ParseResult<NamedTerm> {
         self.expect_token(TokenKind::Lambda)?;
 
         let name = self.parse_name()?;
@@ -123,7 +123,7 @@ impl Parser {
         self.expect_token(TokenKind::Space)?;
         let body = self.parse_term()?;
 
-        Ok(NamedTerm::Abs(Binding { name, ty }, Box::new(body)))
+        Ok(NamedTerm::Lam(Binding { name, ty }, Box::new(body)))
     }
 
     fn parse_app(&mut self) -> ParseResult<NamedTerm> {

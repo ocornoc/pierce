@@ -61,11 +61,11 @@ impl Context {
 
                 Ok(NamedTerm::Var(bind.name))
             }
-            Term::Abs(bind, body) => {
+            Term::Lam(bind, body) => {
                 self.inner.push(bind);
                 let body = self.restore(*body)?;
                 let bind = self.inner.pop().unwrap();
-                Ok(NamedTerm::Abs(bind, Box::new(body)))
+                Ok(NamedTerm::Lam(bind, Box::new(body)))
             }
             Term::App(t1, t2) => {
                 let t1 = self.restore(*t1)?;
@@ -88,12 +88,12 @@ impl Context {
                     .ok_or_else(|| CtxError::MissingBinding(name))?;
                 Ok((Term::Var(index as Index), bind.ty.clone()))
             }
-            NamedTerm::Abs(bind, body) => {
+            NamedTerm::Lam(bind, body) => {
                 self.inner.push(bind);
                 let (body, body_ty) = self.desugar(*body)?;
                 let bind = self.inner.pop().unwrap();
                 Ok((
-                    Term::Abs(bind.clone(), Box::new(body)),
+                    Term::Lam(bind.clone(), Box::new(body)),
                     Ty::Arrow(Box::new(bind.ty), Box::new(body_ty)),
                 ))
             }
@@ -113,7 +113,7 @@ impl Context {
                 let (t2, ty2) = self.desugar(*t2)?;
                 let bind = self.inner.pop().unwrap();
                 Ok((
-                    Term::App(Box::new(Term::Abs(bind, Box::new(t2))), Box::new(t1)),
+                    Term::App(Box::new(Term::Lam(bind, Box::new(t2))), Box::new(t1)),
                     ty2,
                 ))
             }
